@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -18,7 +19,8 @@ type Service interface {
 	CheckExistingUser(username, email string) bool
 	CreateUser(user models.UserModel) (interface{}, error)
 	VerifyUser(username string) (interface{}, error)
-	GetUser(username string) *models.UserModel
+	GetUser(username, projection string) *models.UserModel
+	ReVerifyCode(userId primitive.ObjectID, verifyCode int, verifyCodeExpiry time.Time) (interface{}, error)
 }
 
 type service struct {

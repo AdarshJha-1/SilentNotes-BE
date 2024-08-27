@@ -20,9 +20,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/sign-up", s.SignUp)
-		r.Get("/sign-in", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Sign IN"))
-		})
+		r.Post("/sign-in", s.SignIn)
 		r.Put("/verify", s.VerifyUser)
 	})
 

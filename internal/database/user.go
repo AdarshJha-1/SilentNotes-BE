@@ -4,8 +4,10 @@ import (
 	"ama/internal/models"
 	"context"
 	"fmt"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -33,9 +35,20 @@ func (s *service) CreateUser(user models.UserModel) (interface{}, error) {
 	return result.InsertedID, nil
 }
 
-func (s *service) GetUser(username string) *models.UserModel {
+func (s *service) GetUser(identifier, projection string) *models.UserModel {
 	var user models.UserModel
-	err := UserCollection.FindOne(context.Background(), bson.M{"username": username}, options.FindOne().SetProjection(bson.M{"password": 0})).Decode(&user)
+	filter := bson.M{"$or": []bson.M{
+		{"email": identifier},
+		{"username": identifier},
+	}}
+	var err error
+	if projection == "" {
+		err = UserCollection.FindOne(context.Background(), filter).Decode(&user)
+	} else {
+		err = UserCollection.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{projection: 0})).Decode(&user)
+	}
+	fmt.Println("user", user)
+	fmt.Println("err", err)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	} else if err != nil {
@@ -62,5 +75,19 @@ func (s *service) VerifyUser(username string) (interface{}, error) {
 		return nil, err
 	}
 	fmt.Println(result)
+	return result.UpsertedID, nil
+}
+
+func (s *service) ReVerifyCode(userId primitive.ObjectID, verifyCode int, verifyCodeExpiry time.Time) (interface{}, error) {
+	updateFilter := bson.M{
+		"$set": bson.M{
+			"verify_code":        verifyCode,
+			"verify_code_expiry": verifyCodeExpiry,
+		},
+	}
+	result, err := UserCollection.UpdateByID(context.Background(), userId, updateFilter)
+	if err != nil {
+		return nil, err
+	}
 	return result.UpsertedID, nil
 }

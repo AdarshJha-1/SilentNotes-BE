@@ -6,7 +6,6 @@ import (
 	"ama/internal/utils"
 	"ama/internal/utils/email"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
@@ -90,6 +89,96 @@ func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 
 }
+func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) {
+
+	var wg sync.WaitGroup
+
+	var user *models.SingInModel
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid input", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	defer r.Body.Close()
+
+	var validate = validator.New()
+	err = validate.Struct(user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "validation failed", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	dbUser := s.db.GetUser(user.Identifier, "")
+
+	if dbUser == nil {
+		w.WriteHeader(http.StatusNotFound)
+		res := types.Response{StatusCode: http.StatusNotFound, Success: false, Message: "user not found"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	isPasswordCorrect := utils.CheckPassword(user.Password, dbUser.Password)
+	if !isPasswordCorrect {
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "wrong credentials", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	if !dbUser.IsVerified {
+		verifyCode := utils.GenerateVerifyCode()
+		verifyCodeExpiry := utils.VerifyCodeExpiry()
+		s.db.ReVerifyCode(dbUser.ID, verifyCode, verifyCodeExpiry)
+
+		wg.Add(1)
+
+		var emailError error
+		go func() {
+			defer wg.Done()
+			emailError = email.SendVerificationEmail(dbUser.Username, dbUser.Email, verifyCode)
+		}()
+
+		wg.Wait()
+
+		if emailError != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "error sending email verification code", Error: emailError.Error()}
+			json.NewEncoder(w).Encode(res)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "please verify your account before singing up, check email"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	token := utils.CreateJWT(dbUser.ID.Hex())
+
+	if token == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "error creating jwt token"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	cookie := &http.Cookie{
+		Name:     "token",
+		Value:    token.(string),
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		MaxAge:   86400,
+	}
+	http.SetCookie(w, cookie)
+	w.WriteHeader(http.StatusOK)
+	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "user signed in successfully", Data: map[string]interface{}{"token": token}}
+	json.NewEncoder(w).Encode(res)
+}
 
 func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
@@ -102,8 +191,7 @@ func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := s.db.GetUser(username)
-	fmt.Println(user)
+	user := s.db.GetUser(username, "password")
 	if user == nil {
 		w.WriteHeader(http.StatusNotFound)
 		res := types.Response{StatusCode: http.StatusNotFound, Success: false, Message: "user not found"}
@@ -120,7 +208,7 @@ func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	isVerifyCodeCorrect := verifyCodeInt == user.VerifyCode
-	fmt.Println(isVerifyCodeCorrect, verifyCode, user.VerifyCode)
+
 	if !isVerifyCodeCorrect {
 		w.WriteHeader(http.StatusBadRequest)
 		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid verify code"}
@@ -134,7 +222,7 @@ func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(res)
 		return
 	}
-	fmt.Println(userId)
+
 	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "user verified successfully", Data: map[string]interface{}{"userId": userId}}
 	json.NewEncoder(w).Encode(res)
 
