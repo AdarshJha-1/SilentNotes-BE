@@ -21,9 +21,16 @@ type service struct {
 }
 
 var (
-	host = os.Getenv("DB_HOST")
-	port = os.Getenv("DB_PORT")
-	//database = os.Getenv("DB_DATABASE")
+	UserCollection    *mongo.Collection
+	MessageCollection *mongo.Collection
+)
+
+var (
+	host        = os.Getenv("DB_HOST")
+	port        = os.Getenv("DB_PORT")
+	database    = os.Getenv("DB_NAME")
+	userColl    = os.Getenv("USER_COLL")
+	messageColl = os.Getenv("MESSAGE_COLL")
 )
 
 func New() Service {
