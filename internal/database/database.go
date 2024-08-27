@@ -1,6 +1,7 @@
 package database
 
 import (
+	"ama/internal/models"
 	"context"
 	"fmt"
 	"log"
@@ -14,6 +15,10 @@ import (
 
 type Service interface {
 	Health() map[string]string
+	CheckExistingUser(username, email string) bool
+	CreateUser(user models.UserModel) (interface{}, error)
+	VerifyUser(username string) (interface{}, error)
+	GetUser(username string) *models.UserModel
 }
 
 type service struct {
@@ -26,20 +31,22 @@ var (
 )
 
 var (
-	host        = os.Getenv("DB_HOST")
-	port        = os.Getenv("DB_PORT")
+	dbURI       = os.Getenv("MONGO_DB_URI")
 	database    = os.Getenv("DB_NAME")
 	userColl    = os.Getenv("USER_COLL")
 	messageColl = os.Getenv("MESSAGE_COLL")
 )
 
 func New() Service {
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(fmt.Sprintf("mongodb://%s:%s", host, port)))
+	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(dbURI))
 
 	if err != nil {
 		log.Fatal(err)
 
 	}
+	UserCollection = client.Database(database).Collection(userColl)
+	MessageCollection = client.Database(database).Collection(messageColl)
+
 	return &service{
 		db: client,
 	}
@@ -51,7 +58,7 @@ func (s *service) Health() map[string]string {
 
 	err := s.db.Ping(ctx, nil)
 	if err != nil {
-		log.Fatalf(fmt.Sprintf("db down: %v", err))
+		log.Fatal(fmt.Printf("db down: %v", err))
 	}
 
 	return map[string]string{

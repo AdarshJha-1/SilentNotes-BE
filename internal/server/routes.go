@@ -11,11 +11,20 @@ import (
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.AllowContentType("application/json", "text/xml"))
+	r.Use(middleware.CleanPath)
 	r.Use(middleware.Logger)
 
 	r.Get("/", s.HelloWorldHandler)
-
 	r.Get("/health", s.healthHandler)
+
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/sign-up", s.SignUp)
+		r.Get("/sign-in", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("Sign IN"))
+		})
+		r.Put("/verify", s.VerifyUser)
+	})
 
 	return r
 }
