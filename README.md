@@ -23,16 +23,6 @@ run the application
 make run
 ```
 
-Create DB container
-```bash
-make docker-run
-```
-
-Shutdown DB container
-```bash
-make docker-down
-```
-
 clean up binary from the last build
 ```bash
 make clean
