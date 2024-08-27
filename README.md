@@ -33,16 +33,6 @@ Shutdown DB container
 make docker-down
 ```
 
-live reload the application
-```bash
-make watch
-```
-
-run the test suite
-```bash
-make test
-```
-
 clean up binary from the last build
 ```bash
 make clean
