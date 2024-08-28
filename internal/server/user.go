@@ -19,7 +19,7 @@ func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	var wg sync.WaitGroup
 
-	var user *models.UserModel
+	var user models.UserModel
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -78,7 +78,7 @@ func (s *Server) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := s.db.CreateUser(*user)
+	userId, err := s.db.CreateUser(user)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "error creating user", Error: err.Error()}
@@ -93,7 +93,7 @@ func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	var wg sync.WaitGroup
 
-	var user *models.SingInModel
+	var user models.SingInModel
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -184,6 +184,7 @@ func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
 	verifyCode := r.URL.Query().Get("code")
 
+	defer r.Body.Close()
 	if username == "" || verifyCode == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid inputs"}
@@ -194,7 +195,7 @@ func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 	verifyCodeInt, err := strconv.Atoi(verifyCode)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "something went wrong", Error: err.Error()}
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -215,9 +216,9 @@ func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isVerifyCodeCorrect := verifyCodeInt == user.VerifyCode
+	isCorrectVerifyCode := verifyCodeInt == user.VerifyCode
 
-	if !isVerifyCodeCorrect {
+	if !isCorrectVerifyCode {
 		w.WriteHeader(http.StatusBadRequest)
 		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid verify code"}
 		json.NewEncoder(w).Encode(res)
@@ -247,6 +248,7 @@ func (s *Server) AcceptMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	isAcceptingMessagesQuery := r.URL.Query().Get("is_accepting_messages")
+	defer r.Body.Close()
 	if isAcceptingMessagesQuery == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid inputs"}
