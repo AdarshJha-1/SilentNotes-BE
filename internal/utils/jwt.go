@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -18,4 +19,23 @@ func CreateJWT(userId string) interface{} {
 		return nil
 	}
 	return token
+}
+
+func VerifyJWT(token string) (jwt.MapClaims, error) {
+
+	verifiedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !verifiedToken.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	claim, _ := verifiedToken.Claims.(jwt.MapClaims)
+
+	return claim, nil
 }

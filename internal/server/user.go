@@ -125,7 +125,7 @@ func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) {
 	isPasswordCorrect := utils.CheckPassword(user.Password, dbUser.Password)
 	if !isPasswordCorrect {
 		w.WriteHeader(http.StatusBadRequest)
-		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "wrong credentials", Error: err.Error()}
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "wrong credentials", Error: "wrong credentials"}
 		json.NewEncoder(w).Encode(res)
 		return
 	}
@@ -183,6 +183,14 @@ func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) {
 func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
 	verifyCode := r.URL.Query().Get("code")
+
+	if username == "" || verifyCode == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid inputs"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
 	verifyCodeInt, err := strconv.Atoi(verifyCode)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -226,4 +234,35 @@ func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "user verified successfully", Data: map[string]interface{}{"userId": userId}}
 	json.NewEncoder(w).Encode(res)
 
+}
+
+func (s *Server) AcceptMessages(w http.ResponseWriter, r *http.Request) {
+
+	userId := r.Context().Value(types.UserIDKey).(string)
+	userIdObjectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	isAcceptingMessagesQuery := r.URL.Query().Get("is_accepting_messages")
+	if isAcceptingMessagesQuery == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid inputs"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	isAcceptingMessages := isAcceptingMessagesQuery == "true"
+
+	result := s.db.ToggleAcceptMessages(isAcceptingMessages, userIdObjectId)
+	if !result {
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "failed to toggle accept messages", Error: "failed to toggle accept messages"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "accept message status updated successfully"}
+	json.NewEncoder(w).Encode(res)
 }

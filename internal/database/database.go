@@ -21,6 +21,7 @@ type Service interface {
 	VerifyUser(username string) (interface{}, error)
 	GetUser(username, projection string) *models.UserModel
 	ReVerifyCode(userId primitive.ObjectID, verifyCode int, verifyCodeExpiry time.Time) (interface{}, error)
+	ToggleAcceptMessages(isAcceptingMessages bool, userId primitive.ObjectID) bool
 }
 
 type service struct {

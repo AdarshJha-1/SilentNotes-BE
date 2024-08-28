@@ -91,3 +91,21 @@ func (s *service) ReVerifyCode(userId primitive.ObjectID, verifyCode int, verify
 	}
 	return result.UpsertedID, nil
 }
+
+func (s *service) ToggleAcceptMessages(isAcceptingMessages bool, userId primitive.ObjectID) bool {
+
+	updateFilter := bson.M{
+		"$set": bson.M{
+			"is_accepting_messages": isAcceptingMessages,
+		},
+	}
+	result, err := UserCollection.UpdateByID(context.Background(), userId, updateFilter)
+	if err != nil {
+		return false
+	}
+	fmt.Println("result", result)
+	if result.MatchedCount == 0 {
+		return false
+	}
+	return true
+}
