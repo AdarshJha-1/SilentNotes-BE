@@ -9,33 +9,6 @@ import (
 	"time"
 )
 
-// func AuthMiddleware(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		token, err := r.Cookie("token")
-// 		if err == http.ErrNoCookie {
-// 			w.WriteHeader(http.StatusUnauthorized)
-// 			res := types.Response{StatusCode: http.StatusUnauthorized, Message: "Unauthorized", Error: "Unauthorized"}
-// 			json.NewEncoder(w).Encode(res)
-// 			return
-// 		}
-
-// 		claims, err := utils.VerifyJWT(token.Value)
-// 		if err != nil {
-// 			w.WriteHeader(http.StatusUnauthorized)
-// 			res := types.Response{StatusCode: http.StatusUnauthorized, Message: "Unauthorized", Error: err.Error()}
-// 			json.NewEncoder(w).Encode(res)
-// 			return
-// 		}
-
-// 		userId := claims["user_id"].(string)
-// 		fmt.Println("Extracted userID:", userId)
-
-// 		ctx := context.WithValue(r.Context(), types.UserIDKey, userId)
-// 		// fmt.Println("Context value set:", ctx.Value(config.UserIDKey))
-// 		next.ServeHTTP(w, r.WithContext(ctx))
-// 	})
-// }
-
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

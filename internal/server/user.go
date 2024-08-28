@@ -180,6 +180,25 @@ func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+func (s *Server) SignOut(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	cookie := http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, &cookie)
+	w.WriteHeader(http.StatusOK)
+	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "user signed out successfully"}
+	json.NewEncoder(w).Encode(res)
+}
+
 func (s *Server) VerifyUser(w http.ResponseWriter, r *http.Request) {
 	username := r.URL.Query().Get("username")
 	verifyCode := r.URL.Query().Get("code")
