@@ -23,6 +23,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 		r.Post("/sign-up", s.SignUp)
 		r.Post("/sign-in", s.SignIn)
 		r.Put("/verify", s.VerifyUser)
+		r.Post("/send-message", s.SendMessage)
 
 		r.Group(func(r chi.Router) {
 			r.Use(middlewares.Auth)

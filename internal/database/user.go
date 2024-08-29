@@ -3,6 +3,7 @@ package database
 import (
 	"ama/internal/models"
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -47,8 +48,6 @@ func (s *service) GetUser(identifier, projection string) *models.UserModel {
 	} else {
 		err = UserCollection.FindOne(context.Background(), filter, options.FindOne().SetProjection(bson.M{projection: 0})).Decode(&user)
 	}
-	fmt.Println("user", user)
-	fmt.Println("err", err)
 	if err == mongo.ErrNoDocuments {
 		return nil
 	} else if err != nil {
@@ -108,4 +107,22 @@ func (s *service) ToggleAcceptMessages(isAcceptingMessages bool, userId primitiv
 		return false
 	}
 	return true
+}
+
+func (s *service) AddMessage(username string, message models.Message) error {
+	filter := bson.M{"username": username}
+	updateFilter := bson.M{
+		"$push": bson.M{
+			"messages": message,
+		},
+	}
+	result, err := UserCollection.UpdateOne(context.Background(), filter, updateFilter)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return errors.New("user not found")
+	}
+
+	return nil
 }

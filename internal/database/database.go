@@ -19,9 +19,10 @@ type Service interface {
 	CheckExistingUser(username, email string) bool
 	CreateUser(user models.UserModel) (interface{}, error)
 	VerifyUser(username string) (interface{}, error)
-	GetUser(username, projection string) *models.UserModel
+	GetUser(identifier, projection string) *models.UserModel
 	ReVerifyCode(userId primitive.ObjectID, verifyCode int, verifyCodeExpiry time.Time) (interface{}, error)
 	ToggleAcceptMessages(isAcceptingMessages bool, userId primitive.ObjectID) bool
+	AddMessage(username string, message models.Message) error
 }
 
 type service struct {

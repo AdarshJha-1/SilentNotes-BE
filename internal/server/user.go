@@ -6,6 +6,7 @@ import (
 	"ama/internal/utils"
 	"ama/internal/utils/email"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
@@ -285,5 +286,64 @@ func (s *Server) AcceptMessages(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "accept message status updated successfully"}
+	json.NewEncoder(w).Encode(res)
+}
+
+func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request) {
+
+	var sendMessageData types.SendMessageType
+	err := json.NewDecoder(r.Body).Decode(&sendMessageData)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "invalid input", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	defer r.Body.Close()
+
+	var validate = validator.New()
+	err = validate.Struct(sendMessageData)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "validation failed", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	user := s.db.GetUser(sendMessageData.Identifier, "password")
+	if user == nil {
+		w.WriteHeader(http.StatusNotFound)
+		res := types.Response{StatusCode: http.StatusNotFound, Success: false, Message: "user not found"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	if !user.IsAcceptingMessages {
+		w.WriteHeader(http.StatusForbidden)
+		res := types.Response{StatusCode: http.StatusForbidden, Success: false, Message: "user is not accepting messages"}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	message := models.Message{
+		Content:   sendMessageData.Content,
+		CreatedAt: time.Time{},
+	}
+
+	err = s.db.AddMessage(sendMessageData.Identifier, message)
+	if err != nil {
+		if err == fmt.Errorf("user not found") {
+			w.WriteHeader(http.StatusNotFound)
+			res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "user not found", Error: err.Error()}
+			json.NewEncoder(w).Encode(res)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+	res := types.Response{StatusCode: http.StatusCreated, Success: true, Message: "message sent successfully"}
 	json.NewEncoder(w).Encode(res)
 }
