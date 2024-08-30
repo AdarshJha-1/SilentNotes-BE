@@ -326,6 +326,7 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	message := models.Message{
+		ID:        primitive.NewObjectID(),
 		Content:   sendMessageData.Content,
 		CreatedAt: time.Time{},
 	}
@@ -345,5 +346,33 @@ func (s *Server) SendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	res := types.Response{StatusCode: http.StatusCreated, Success: true, Message: "message sent successfully"}
+	json.NewEncoder(w).Encode(res)
+}
+
+func (s *Server) GetMessages(w http.ResponseWriter, r *http.Request) {
+	userId := r.Context().Value(types.UserIDKey).(string)
+	userIdObjectId, err := primitive.ObjectIDFromHex(userId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	messages, err := s.db.GetMessages(userIdObjectId)
+	if err == nil && messages == nil {
+		w.WriteHeader(http.StatusNotFound)
+		res := types.Response{StatusCode: http.StatusNotFound, Success: false, Message: "no messages currently"}
+		json.NewEncoder(w).Encode(res)
+		return
+	} else if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "current messages", Messages: map[string][]models.Message{"messages": messages}}
 	json.NewEncoder(w).Encode(res)
 }

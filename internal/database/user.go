@@ -4,7 +4,6 @@ import (
 	"ama/internal/models"
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -73,7 +72,6 @@ func (s *service) VerifyUser(username string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(result)
 	return result.UpsertedID, nil
 }
 
@@ -102,7 +100,7 @@ func (s *service) ToggleAcceptMessages(isAcceptingMessages bool, userId primitiv
 	if err != nil {
 		return false
 	}
-	fmt.Println("result", result)
+
 	if result.MatchedCount == 0 {
 		return false
 	}
@@ -125,4 +123,30 @@ func (s *service) AddMessage(username string, message models.Message) error {
 	}
 
 	return nil
+}
+
+func (s *service) GetMessages(userId primitive.ObjectID) ([]models.Message, error) {
+
+	var user models.UserModel
+	var userMessages []models.Message
+	result := UserCollection.FindOne(context.Background(), bson.M{"_id": userId}, options.FindOne().SetProjection(bson.M{
+		"_id":                   0,
+		"username":              0,
+		"email":                 0,
+		"password":              0,
+		"is_accepting_messages": 0,
+		"is_verified":           0,
+	}))
+	err := result.Decode(&user)
+	userMessages = user.Messages
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	if len(userMessages) == 0 {
+		return nil, nil
+	}
+	return userMessages, nil
 }

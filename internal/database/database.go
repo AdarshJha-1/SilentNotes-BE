@@ -23,6 +23,7 @@ type Service interface {
 	ReVerifyCode(userId primitive.ObjectID, verifyCode int, verifyCodeExpiry time.Time) (interface{}, error)
 	ToggleAcceptMessages(isAcceptingMessages bool, userId primitive.ObjectID) bool
 	AddMessage(username string, message models.Message) error
+	GetMessages(userId primitive.ObjectID) ([]models.Message, error)
 }
 
 type service struct {
