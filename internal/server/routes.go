@@ -27,9 +27,10 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 		r.Group(func(r chi.Router) {
 			r.Use(middlewares.Auth)
-			r.Get("/get-messages", s.GetMessages)
 			r.Post("/sign-out", s.SignOut)
 			r.Put("/accept-messages", s.AcceptMessages)
+			r.Get("/get-messages", s.GetMessages)
+			r.Delete("/delete-message/{mId}", s.DeleteMessage)
 		})
 	})
 

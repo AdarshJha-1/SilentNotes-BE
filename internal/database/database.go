@@ -24,6 +24,7 @@ type Service interface {
 	ToggleAcceptMessages(isAcceptingMessages bool, userId primitive.ObjectID) bool
 	AddMessage(username string, message models.Message) error
 	GetMessages(userId primitive.ObjectID) ([]models.Message, error)
+	DeleteMessage(userId, messageId primitive.ObjectID) error
 }
 
 type service struct {

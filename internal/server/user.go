@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -374,5 +375,42 @@ func (s *Server) GetMessages(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "current messages", Messages: map[string][]models.Message{"messages": messages}}
+	json.NewEncoder(w).Encode(res)
+}
+
+func (s *Server) DeleteMessage(w http.ResponseWriter, r *http.Request) {
+	uId := r.Context().Value(types.UserIDKey).(string)
+	userId, err := primitive.ObjectIDFromHex(uId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	mId := chi.URLParam(r, "mId")
+	messagesId, err := primitive.ObjectIDFromHex(mId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+
+	err = s.db.DeleteMessage(userId, messagesId)
+	if err != nil {
+		if err == fmt.Errorf("user not found") {
+			w.WriteHeader(http.StatusNotFound)
+			res := types.Response{StatusCode: http.StatusBadRequest, Success: false, Message: "user not found", Error: err.Error()}
+			json.NewEncoder(w).Encode(res)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		res := types.Response{StatusCode: http.StatusInternalServerError, Success: false, Message: "internal server error", Error: err.Error()}
+		json.NewEncoder(w).Encode(res)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "message deleted successfully"}
 	json.NewEncoder(w).Encode(res)
 }

@@ -150,3 +150,21 @@ func (s *service) GetMessages(userId primitive.ObjectID) ([]models.Message, erro
 	}
 	return userMessages, nil
 }
+
+func (s *service) DeleteMessage(userId, messageId primitive.ObjectID) error {
+	updateFilter := bson.M{
+		"$pull": bson.M{
+			"messages": bson.M{
+				"_id": messageId,
+			},
+		},
+	}
+	result, err := UserCollection.UpdateByID(context.Background(), userId, updateFilter)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return errors.New("user not found")
+	}
+	return nil
+}
