@@ -1,11 +1,11 @@
 package server
 
 import (
-	"ama/internal/middlewares"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"silent-notes/internal/middlewares"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

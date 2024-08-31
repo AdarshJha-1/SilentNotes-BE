@@ -1,6 +1,6 @@
 package types
 
-import "ama/internal/models"
+import "silent-notes/internal/models"
 
 type Response struct {
 	StatusCode          int                         `json:"status_code"`

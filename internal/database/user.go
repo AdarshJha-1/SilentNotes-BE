@@ -1,9 +1,9 @@
 package database
 
 import (
-	"ama/internal/models"
 	"context"
 	"errors"
+	"silent-notes/internal/models"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"

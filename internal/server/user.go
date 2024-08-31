@@ -1,13 +1,13 @@
 package server
 
 import (
-	"ama/internal/models"
-	"ama/internal/types"
-	"ama/internal/utils"
-	"ama/internal/utils/email"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"silent-notes/internal/models"
+	"silent-notes/internal/types"
+	"silent-notes/internal/utils"
+	"silent-notes/internal/utils/email"
 	"strconv"
 	"sync"
 	"time"

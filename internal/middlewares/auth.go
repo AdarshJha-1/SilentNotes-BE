@@ -1,11 +1,11 @@
 package middlewares
 
 import (
-	"ama/internal/types"
-	"ama/internal/utils"
 	"context"
 	"encoding/json"
 	"net/http"
+	"silent-notes/internal/types"
+	"silent-notes/internal/utils"
 	"time"
 )
 

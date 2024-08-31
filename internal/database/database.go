@@ -1,11 +1,11 @@
 package database
 
 import (
-	"ama/internal/models"
 	"context"
 	"fmt"
 	"log"
 	"os"
+	"silent-notes/internal/models"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
