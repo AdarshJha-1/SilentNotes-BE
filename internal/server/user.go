@@ -174,18 +174,18 @@ func (s *Server) SignIn(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
-		MaxAge:   86400,
+		SameSite: http.SameSiteLaxMode,
 	}
 	fmt.Printf("user db: %+v\n", dbUser)
 	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
 	res := types.Response{StatusCode: http.StatusOK, Success: true, Message: "user signed in successfully", Data: map[string]interface{}{"token": token, "user": map[string]interface{}{ // Explicitly define this as a map
-            "id":                  dbUser.ID,
-            "username":            dbUser.Username,
-            "email":               dbUser.Email,
-            "is_verified":         dbUser.IsVerified,
-            "is_accepting_messages": dbUser.IsAcceptingMessages,
-        } }}
+		"id":                    dbUser.ID,
+		"username":              dbUser.Username,
+		"email":                 dbUser.Email,
+		"is_verified":           dbUser.IsVerified,
+		"is_accepting_messages": dbUser.IsAcceptingMessages,
+	}}}
 	json.NewEncoder(w).Encode(res)
 }
 
